@@ -11,3 +11,13 @@ function getAvailablePumps() {
 }
 
 console.log(getAvailablePumps());
+
+function findPumpByFuel(type) {
+    
+    const available = getAvailablePumps();
+    
+    return available.find(pump => pump.fuelType === type);
+}
+
+console.log(findPumpByFuel('95'));
+
