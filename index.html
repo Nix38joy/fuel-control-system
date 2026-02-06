@@ -1,13 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=, initial-scale=1.0">
-    <title>FuelControl</title>
-    <link rel="stylesheet" href="/src/priceEngine.js">
-    <link rel="stylesheet" href="/src/stationManager.js">
+    <title>FuelControl v1.0</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
+    <div class="container">
+        <h1>Система управления АЗС</h1>
+
+        <!-- Форма заправки -->
+        <div class="control-panel">
+            <h3>Новая заправка</h3>
+            <input type="number" id="moneyInput" placeholder="Сумма (руб)">
+            <select id="fuelSelect">
+                <option value="92">АИ-92</option>
+                <option value="95">АИ-95</option>
+                <option value="98">АИ-98</option>
+                <option value="diesel">Дизель</option>
+            </select>
+            <label>
+                <input type="checkbox" id="cardCheckbox"> Есть карта
+            </label>
+            <button id="startBtn">Заправить</button>
+        </div>
+
+        <!-- Визуализация колонок -->
+        <div id="pumpsGrid" class="pumps-grid">
+            <!-- Сюда JS будет "рисовать" колонки -->
+        </div>
+
+        <!-- Отчет -->
+        <div class="status-panel">
+            <p id="statusMessage">Готов к работе</p>
+            <h3>Выручка: <span id="totalRevenue">0</span> р</h3>
+        </div>
+    </div>
+
+    <script src="src/priceEngine.js"></script>
+    <script src="src/stationManager.js"></script>
+    <script src="src/main.js"></script>
 </body>
 </html>
