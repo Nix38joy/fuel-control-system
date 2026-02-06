@@ -26,3 +26,9 @@ function calculateFuelLimit(money, fuelType, hasCard) {
         return "Ошибка: несуществующий вид топлива";
     }
 }
+
+
+
+
+
+module.exports = { calculateFuelLimit };
