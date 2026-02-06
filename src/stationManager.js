@@ -7,5 +7,7 @@ const pumps = [
 ];
 
 function getAvailablePumps() {
-    return pumps;
+    return pumps.filter(pump => pump.status === 'available');
 }
+
+console.log(getAvailablePumps());
