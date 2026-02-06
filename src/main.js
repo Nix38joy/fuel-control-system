@@ -2,24 +2,25 @@ const { calculateFuelLimit } = require('./priceEngine');
 const { findPumpByFuel } = require('./stationManager');
 
 function startDispenser(money, fuelType, hasCard) {
-    // 1. Проверяем лимиты
+    // 1. Проверяем деньги и тип топлива (через модуль цен)
     const limitCheck = calculateFuelLimit(money, fuelType, hasCard);
     
-    // Если функция вернула ошибку или текст про минималку — стоп
-    if (limitCheck.includes("Минимальная") || limitCheck.includes("Ошибка")) {
+    // Если там есть слово "Ошибка" или "Минимальная" — возвращаем этот текст и выходим
+    if (limitCheck.includes("Ошибка") || limitCheck.includes("Минимальная")) {
         return limitCheck;
     }
 
-    // 2. Ищем колонку
+    // 2. Ищем колонку (через модуль станций)
     const pump = findPumpByFuel(fuelType);
     
     if (!pump) {
-        return "Извините, все колонки с этим топливом сейчас заняты.";
+        return `Извините, все колонки для топлива "${fuelType}" сейчас заняты.`;
     }
 
-    // 3. Итоговый успех
+    // 3. Если всё ок — выдаем успех
     return `Успех! Оплата принята. Проезжайте к колонке №${pump.id}`;
 }
 
-// ПРОВЕРКА:
-console.log(startDispenser(2000, '95', false));
+// ТЕСТЫ:
+console.log(startDispenser(2000, '95', false)); // Должен быть успех
+console.log(startDispenser(2000, 'жидкий азот', true)); // Должна быть ошибка

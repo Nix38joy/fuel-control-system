@@ -1,6 +1,12 @@
 function calculateFuelLimit(money, fuelType, hasCard) {
     let minSum;
     let min98;
+    const validFuels = ['92', '95', '98', 'diesel'];
+
+if (!validFuels.includes(fuelType)) {
+    return `Ошибка: тип топлива "${fuelType}" не поддерживается нашей АЗС.`;
+}
+
 
     if (hasCard) {
         minSum = 300;
@@ -26,6 +32,8 @@ function calculateFuelLimit(money, fuelType, hasCard) {
         return "Ошибка: несуществующий вид топлива";
     }
 }
+
+
 
 
 
