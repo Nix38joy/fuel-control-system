@@ -22,6 +22,19 @@ function startDispenser(money, fuelType, hasCard) {
         return `Извините, все колонки для топлива "${fuelType}" сейчас заняты.`;
     }
 
+        // ... внутри startDispenser, после поиска pump ...
+
+    // Бронируем колонку, чтобы она стала занятой
+    reservePump(pump.id);
+
+    transactionHistory.push({
+        amount: money,
+        fuel: fuelType,
+        pumpId: pump.id,
+        time: new Date().toLocaleTimeString()
+    });
+
+
     // 3. Записываем успешную транзакцию
     transactionHistory.push({
         amount: money,

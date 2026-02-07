@@ -21,6 +21,18 @@ function findPumpByFuel(type) {
 
 console.log(findPumpByFuel('95'));
 
+function reservePump(id) {
+    // Находим нужную колонку в массиве
+    const pump = pumps.find(p => p.id === id);
+    
+    // Если нашли — меняем статус
+    if (pump) {
+        pump.status = 'busy';
+        console.log(`Колонка №${id} теперь занята.`);
+    }
+}
+
+
 
 
 
