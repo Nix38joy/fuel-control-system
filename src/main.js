@@ -13,12 +13,29 @@ function startDispenser(money, fuelType, hasCard) {
     }
 
     // 2. Ищем свободную колонку в stationManager.js
+      // 2. Ищем свободную колонку
     const pump = findPumpByFuel(fuelType);
     
-    // Если не нашли колонку (все busy или maintenance)
     if (!pump) {
-        return { message: `Извините, все колонки для "${fuelType}" заняты.`, success: false };
+        // Если свободную не нашли, лезем в основной массив pumps проверить причину
+        // (ВАЖНО: переменная pumps должна быть доступна из stationManager.js)
+        const allPumpsOfThisType = pumps.filter(p => p.fuelType === fuelType);
+        
+        if (allPumpsOfThisType.length === 0) {
+            return { message: `Ошибка: тип топлива "${fuelType}" не поддерживается.`, success: false };
+        }
+
+        // Проверяем, есть ли среди них те, что в ремонте
+        const isMaintenance = allPumpsOfThisType.every(p => p.status === 'maintenance');
+        
+        if (isMaintenance) {
+            return { message: `Извините, колонка с "${fuelType}" на тех. обслуживании.`, success: false };
+        }
+
+        return { message: `Извините, все колонки для "${fuelType}" сейчас заняты.`, success: false };
     }
+
+
 
     // 3. ЕСЛИ ВСЁ ОК: Сохраняем транзакцию
     transactionHistory.push({

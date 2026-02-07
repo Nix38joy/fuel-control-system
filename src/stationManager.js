@@ -40,6 +40,12 @@ function releasePump(id) {
     }
 }
 
+function checkFuelExistence(type) {
+    // Ищем в массиве ХОТЯ БЫ ОДНУ колонку с таким топливом
+    return pumps.some(p => p.fuelType === type);
+}
+
+
 
 
 
