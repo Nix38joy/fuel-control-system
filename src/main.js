@@ -1,32 +1,26 @@
-
-// const { calculateFuelLimit } = require('./priceEngine');
-// const { findPumpByFuel } = require('./stationManager');
-
 // --- СОСТОЯНИЕ СИСТЕМЫ (State) ---
 const transactionHistory = [];
 
-// --- ГЛАВНАЯ ЛОГИКА ---
+// --- ГЛАВНАЯ ЛОГИКА (Бизнес-процесс) ---
 
 function startDispenser(money, fuelType, hasCard) {
-    // 1. Проверяем лимиты и тип топлива через priceEngine
+    // 1. Проверяем лимиты в priceEngine.js
     const limitCheck = calculateFuelLimit(money, fuelType, hasCard);
     
+    // Если вернулась ошибка по деньгам или типу топлива
     if (limitCheck.includes("Ошибка") || limitCheck.includes("Минимальная")) {
-        return limitCheck;
+        return { message: limitCheck, success: false };
     }
 
-    // 2. Ищем свободную колонку через stationManager
+    // 2. Ищем свободную колонку в stationManager.js
     const pump = findPumpByFuel(fuelType);
     
+    // Если не нашли колонку (все busy или maintenance)
     if (!pump) {
-        return `Извините, все колонки для топлива "${fuelType}" сейчас заняты.`;
+        return { message: `Извините, все колонки для "${fuelType}" заняты.`, success: false };
     }
 
-        // ... внутри startDispenser, после поиска pump ...
-
-    // Бронируем колонку, чтобы она стала занятой
-    reservePump(pump.id);
-
+    // 3. ЕСЛИ ВСЁ ОК: Сохраняем транзакцию
     transactionHistory.push({
         amount: money,
         fuel: fuelType,
@@ -34,99 +28,82 @@ function startDispenser(money, fuelType, hasCard) {
         time: new Date().toLocaleTimeString()
     });
 
-
-    // 3. Записываем успешную транзакцию
-    transactionHistory.push({
-        amount: money,
-        fuel: fuelType,
-        pumpId: pump.id,
-        time: new Date().toLocaleTimeString()
-    });
-
-    return `Успех! Оплата принята. Проезжайте к колонке №${pump.id}`;
+    // Возвращаем объект с успехом и данными о колонке
+    return { 
+        message: `Успех! Проезжайте к колонке №${pump.id}`, 
+        success: true, 
+        pump: pump 
+    };
 }
 
-function renderPumps() {
-    const pumpsGrid = document.getElementById('pumpsGrid');
-    pumpsGrid.innerHTML = ''; // Очищаем сетку
-
-    pumps.forEach(pump => {
-        // Создаем элемент карточки
-        const pumpDiv = document.createElement('div');
-        
-        // Добавляем классы (базовый + класс статуса для цвета из CSS)
-        pumpDiv.className = `pump-card ${pump.status}`;
-        
-        // Наполняем текстом
-        pumpDiv.innerHTML = `
-            <h3>Колонка №${pump.id}</h3>
-            <p>Топливо: ${pump.fuelType}</p>
-            <small>${pump.status === 'available' ? 'Свободна' : 'Занята'}</small>
-        `;
-        
-        // Добавляем в сетку
-        pumpsGrid.appendChild(pumpDiv);
-    });
-}
-
-// Вызываем один раз при загрузке, чтобы увидеть колонки сразу
-renderPumps();
-
-
-// Функция для расчета общей выручки
+// Функция расчета выручки
 function getTotalRevenue() {
     let total = 0;
     transactionHistory.forEach(t => total += t.amount);
     return total;
 }
 
-// --- ИНТЕРФЕЙС (Связь с HTML) ---
+// --- ИНТЕРФЕЙС (DOM и Рендеринг) ---
 
-// Находим все элементы на странице
 const startBtn = document.getElementById('startBtn');
+const cancelBtn = document.getElementById('cancelBtn');
 const moneyInput = document.getElementById('moneyInput');
 const fuelSelect = document.getElementById('fuelSelect');
 const cardCheckbox = document.getElementById('cardCheckbox');
 const statusMessage = document.getElementById('statusMessage');
 const totalRevenueDisplay = document.getElementById('totalRevenue');
+const pumpsGrid = document.getElementById('pumpsGrid');
 
-// Слушаем нажатие кнопки "Заправить"
+// Функция отрисовки колонок на экране
+function renderPumps() {
+    pumpsGrid.innerHTML = '';
+    pumps.forEach(pump => {
+        const pumpDiv = document.createElement('div');
+        pumpDiv.className = `pump-card ${pump.status}`;
+        pumpDiv.innerHTML = `
+            <h3>Колонка №${pump.id}</h3>
+            <p>Топливо: ${pump.fuelType}</p>
+            <small>${pump.status === 'available' ? 'Свободна' : 'Занята'}</small>
+        `;
+        pumpsGrid.appendChild(pumpDiv);
+    });
+}
+
+// Кнопка "Заправить"
 startBtn.addEventListener('click', () => {
     const money = Number(moneyInput.value);
     const fuelType = fuelSelect.value;
     const hasCard = cardCheckbox.checked;
 
-    // Запускаем процесс и получаем текст ответа
-    const result = startDispenser(money, fuelType, hasCard);
+    const response = startDispenser(money, fuelType, hasCard);
+    statusMessage.innerText = response.message;
 
-    // Выводим текст ответа прямо на экран!
-    statusMessage.innerText = result;
+    if (response.success) {
+        const currentPump = response.pump; // Та самая ОДНА колонка
+        
+        reservePump(currentPump.id); // Занимаем её
+        renderPumps();               // Перерисовываем (стала оранжевой)
+        totalRevenueDisplay.innerText = getTotalRevenue(); // Обновляем деньги
 
-    // Обновляем цифру выручки на экране
-    totalRevenueDisplay.innerText = getTotalRevenue();
-    renderPumps();
-    // Очищаем поле ввода для следующего клиента
+        // Таймер освобождения через 10 секунд
+        setTimeout(() => {
+            releasePump(currentPump.id); // Освобождаем в данных
+            renderPumps();               // Перерисовываем (стала зеленой)
+            statusMessage.innerText = `Колонка №${currentPump.id} освободилась. Готов к работе!`;
+        }, 10000);
+    }
+
     moneyInput.value = '';
 });
 
-
-// 1. Находим кнопку "Отменить"
-const cancelBtn = document.getElementById('cancelBtn');
-
-// 2. Вешаем слушателя
+// Кнопка "Отменить"
 cancelBtn.addEventListener('click', () => {
-    // Очищаем поле ввода суммы
     moneyInput.value = '';
-    
-    // Сбрасываем выбор топлива на первый вариант (92)
     fuelSelect.value = '92';
-    
-    // Снимаем галочку с карты лояльности
     cardCheckbox.checked = false;
-    
-    // Возвращаем статусное сообщение в исходный вид
     statusMessage.innerText = 'Готов к работе';
-    
-    console.log('Операция отменена пользователем');
 });
+
+// Первичная отрисовка при загрузке страницы
+renderPumps();
 

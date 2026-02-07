@@ -32,6 +32,15 @@ function reservePump(id) {
     }
 }
 
+function releasePump(id) {
+    const pump = pumps.find(p => p.id === id);
+    if (pump) {
+        pump.status = 'available';
+        console.log(`Колонка №${id} снова свободна!`);
+    }
+}
+
+
 
 
 
