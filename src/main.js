@@ -46,6 +46,33 @@ function startDispenser(money, fuelType, hasCard) {
     return `Успех! Оплата принята. Проезжайте к колонке №${pump.id}`;
 }
 
+function renderPumps() {
+    const pumpsGrid = document.getElementById('pumpsGrid');
+    pumpsGrid.innerHTML = ''; // Очищаем сетку
+
+    pumps.forEach(pump => {
+        // Создаем элемент карточки
+        const pumpDiv = document.createElement('div');
+        
+        // Добавляем классы (базовый + класс статуса для цвета из CSS)
+        pumpDiv.className = `pump-card ${pump.status}`;
+        
+        // Наполняем текстом
+        pumpDiv.innerHTML = `
+            <h3>Колонка №${pump.id}</h3>
+            <p>Топливо: ${pump.fuelType}</p>
+            <small>${pump.status === 'available' ? 'Свободна' : 'Занята'}</small>
+        `;
+        
+        // Добавляем в сетку
+        pumpsGrid.appendChild(pumpDiv);
+    });
+}
+
+// Вызываем один раз при загрузке, чтобы увидеть колонки сразу
+renderPumps();
+
+
 // Функция для расчета общей выручки
 function getTotalRevenue() {
     let total = 0;
@@ -77,7 +104,7 @@ startBtn.addEventListener('click', () => {
 
     // Обновляем цифру выручки на экране
     totalRevenueDisplay.innerText = getTotalRevenue();
-    
+    renderPumps();
     // Очищаем поле ввода для следующего клиента
     moneyInput.value = '';
 });
