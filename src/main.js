@@ -70,4 +70,23 @@ startBtn.addEventListener('click', () => {
 });
 
 
+// 1. Находим кнопку "Отменить"
+const cancelBtn = document.getElementById('cancelBtn');
+
+// 2. Вешаем слушателя
+cancelBtn.addEventListener('click', () => {
+    // Очищаем поле ввода суммы
+    moneyInput.value = '';
+    
+    // Сбрасываем выбор топлива на первый вариант (92)
+    fuelSelect.value = '92';
+    
+    // Снимаем галочку с карты лояльности
+    cardCheckbox.checked = false;
+    
+    // Возвращаем статусное сообщение в исходный вид
+    statusMessage.innerText = 'Готов к работе';
+    
+    console.log('Операция отменена пользователем');
+});
 
