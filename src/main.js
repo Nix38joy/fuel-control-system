@@ -1,5 +1,8 @@
 // --- СОСТОЯНИЕ СИСТЕМЫ (State) ---
-const transactionHistory = [];
+// Пытаемся достать данные из памяти, если их нет — создаем пустой массив
+const savedTransactions = localStorage.getItem('fuelTransactions');
+const transactionHistory = savedTransactions ? JSON.parse(savedTransactions) : [];
+
 
 // --- ГЛАВНАЯ ЛОГИКА (Бизнес-процесс) ---
 
@@ -44,6 +47,9 @@ function startDispenser(money, fuelType, hasCard) {
         pumpId: pump.id,
         time: new Date().toLocaleTimeString()
     });
+
+localStorage.setItem('fuelTransactions', JSON.stringify(transactionHistory));
+
 
     // Возвращаем объект с успехом и данными о колонке
     return { 
@@ -123,4 +129,7 @@ cancelBtn.addEventListener('click', () => {
 
 // Первичная отрисовка при загрузке страницы
 renderPumps();
+
+totalRevenueDisplay.innerText = getTotalRevenue();
+
 
