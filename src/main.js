@@ -112,11 +112,34 @@ clearHistoryBtn.addEventListener('click', () => {
         localStorage.removeItem('fuelTransactions');
         totalRevenueDisplay.innerText = '0';
         statusMessage.innerText = 'Смена закрыта.';
+        renderTransactions();
     }
 });
 
 // Стартовый запуск
 renderPumps();
+totalRevenueDisplay.innerText = getTotalRevenue();
+
+function renderTransactions() {
+    const list = document.getElementById('transactionsList');
+    list.innerHTML = ''; // Очищаем старое
+
+    // Берем последние 10 транзакций и переворачиваем, чтобы новые были сверху
+    const lastTransactions = [...transactionHistory].reverse().slice(0, 10);
+
+    lastTransactions.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'transaction-item fade-in';
+        item.innerHTML = `
+            <span>+ ${t.amount} р</span>
+            <span>Колонка №${t.pumpId} (${t.fuel})</span>
+            <span>${t.time}</span>
+        `;
+        list.appendChild(item);
+    });
+}
+renderPumps();
+renderTransactions(); // ДОБАВЬ ЭТУ СТРОКУ В КОНЕЦ ФАЙЛА
 totalRevenueDisplay.innerText = getTotalRevenue();
 
 
