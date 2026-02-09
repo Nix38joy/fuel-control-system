@@ -99,6 +99,9 @@ startBtn.addEventListener('click', () => {
     const hasCard = cardCheckbox.checked;
 
     const response = startDispenser(money, fuelType, hasCard);
+    statusMessage.classList.remove('fade-in'); // Сначала убираем класс
+    void statusMessage.offsetWidth;           // Магия для перезапуска анимации
+    statusMessage.classList.add('fade-in');    // Добавляем снова
     statusMessage.innerText = response.message;
 
     if (response.success) {
