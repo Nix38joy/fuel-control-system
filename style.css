@@ -74,3 +74,14 @@ button:hover {
 .btn-cancel:hover {
     background-color: #c0392b; /* Краснеет при наведении */
 }
+
+.btn-warning {
+    background-color: #f39c12;
+    color: white;
+    margin-top: 10px;
+    width: 100%; /* Пусть будет на всю ширину панели отчета */
+}
+
+.btn-warning:hover {
+    background-color: #e67e22;
+}

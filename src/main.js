@@ -132,4 +132,27 @@ renderPumps();
 
 totalRevenueDisplay.innerText = getTotalRevenue();
 
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+clearHistoryBtn.addEventListener('click', () => {
+    // Наш "предохранитель"
+    const isConfirmed = confirm("Вы уверены, что хотите ЗАКРЫТЬ СМЕНУ? Все данные о выручке будут удалены безвозвратно!");
+
+    if (isConfirmed) {
+        // 1. Очищаем массив в памяти программы
+        transactionHistory.length = 0; 
+        
+        // 2. Удаляем запись из памяти браузера
+        localStorage.removeItem('fuelTransactions');
+        
+        // 3. Обновляем экран
+        totalRevenueDisplay.innerText = '0';
+        statusMessage.innerText = 'Смена закрыта. Касса обнулена.';
+        
+        console.log('Смена закрыта оператором, данные очищены.');
+    } else {
+        console.log('Сброс отменен. Данные в сохранности.');
+    }
+});
+
 
