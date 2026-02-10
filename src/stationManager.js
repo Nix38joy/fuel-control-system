@@ -1,3 +1,11 @@
+const fuelStorage = {
+    '92': 5000,
+    '95': 3000,
+    '98': 1500,
+    'diesel': 10000
+};
+
+
 const pumps = [
     { id: 1, fuelType: '95', status: 'available' },
     { id: 2, fuelType: '92', status: 'available' },

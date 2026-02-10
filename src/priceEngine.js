@@ -1,3 +1,11 @@
+const fuelPrices = {
+    '92': 50,
+    '95': 55,
+    '98': 65,
+    'diesel': 60
+};
+
+
 function calculateFuelLimit(money, fuelType, hasCard) {
     const validFuels = ['92', '95', '98', 'diesel'];
 
@@ -19,6 +27,10 @@ function calculateFuelLimit(money, fuelType, hasCard) {
     }
 
     return "success"; 
+}
+
+function calculateLiters(money, fuelType) {
+    return (money / fuelPrices[fuelType]).toFixed(2);
 }
 
 
