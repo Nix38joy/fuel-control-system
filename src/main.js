@@ -75,6 +75,7 @@ function renderTransactions() {
         item.className = 'transaction-item fade-in';
         item.innerHTML = `<span>+ ${t.amount} р</span><span>№${t.pumpId}</span><span>${t.time}</span>`;
         transactionsList.appendChild(item);
+         document.title = `Выручка: ${getTotalRevenue()} р`;
     });
 }
 
@@ -86,6 +87,11 @@ startBtn.addEventListener('click', () => {
 
     const response = startDispenser(money, fuelType, hasCard);
     statusMessage.innerText = response.message;
+
+    if (isNaN(money) || money <= 0) {
+    statusMessage.innerText = "Ошибка: введите корректную сумму!";
+    return;
+}
 
     if (response.success) {
         // Списание литров
