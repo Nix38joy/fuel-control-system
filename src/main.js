@@ -75,7 +75,7 @@ function renderTransactions() {
         item.className = 'transaction-item fade-in';
         item.innerHTML = `<span>+ ${t.amount} р</span><span>№${t.pumpId}</span><span>${t.time}</span>`;
         transactionsList.appendChild(item);
-         document.title = `Выручка: ${getTotalRevenue()} р`;
+       
     });
 }
 
