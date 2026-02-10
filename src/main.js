@@ -96,7 +96,7 @@ startBtn.addEventListener('click', () => {
     if (response.success) {
         // Списание литров
         const liters = calculateLiters(money, fuelType);
-        fuelStorage[fuelType] = (fuelStorage[fuelType] - liters).toFixed(2);
+        fuelStorage[fuelType] = Number((fuelStorage[fuelType] - liters).toFixed(2));
         
         reservePump(response.pump.id);
         renderPumps();
