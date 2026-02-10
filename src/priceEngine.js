@@ -1,16 +1,13 @@
 function calculateFuelLimit(money, fuelType, hasCard) {
     const validFuels = ['92', '95', '98', 'diesel'];
 
-    // 1. Проверка на существование типа
     if (!validFuels.includes(fuelType)) {
         return `Ошибка: тип топлива "${fuelType}" не поддерживается.`;
     }
 
-    // 2. Уровни минималок
     let minSum = hasCard ? 300 : 500;
     let min98 = hasCard ? 1500 : 2000;
 
-    // 3. Логика ограничений по суммам
     if (money < minSum) {
         return `Минимальная сумма заправки ${minSum} р`;
     } 
@@ -21,9 +18,9 @@ function calculateFuelLimit(money, fuelType, hasCard) {
         return `Минимальная сумма для дизеля 1000 р`;
     }
 
-    // Если всё ок — возвращаем "success"
     return "success"; 
 }
+
 
 // module.exports = { calculateFuelLimit }; // Закомментируй для браузера
 
