@@ -62,14 +62,17 @@
             <!-- АДМИНСКАЯ КНОПКА (СПРЯТАНА ВНИЗУ) -->
             <div class="admin-zone">
                 <hr>
-                <div class="price-admin">
+                <div class="price-admin" style="margin-bottom: 20px;">
     <h4>Настройка цен (руб/л)</h4>
-    <div class="admin-row">
-        <label>95: <input type="number" id="price95" value="55"></label>
-        <label>92: <input type="number" id="price92" value="50"></label>
-        <button id="updatePricesBtn">Обновить цены</button>
+    <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+        <label>92: <input type="number" id="price92" value="50" style="width: 50px;"></label>
+        <label>95: <input type="number" id="price95" value="55" style="width: 50px;"></label>
+        <label>98: <input type="number" id="price98" value="65" style="width: 50px;"></label>
+        <label>ДТ: <input type="number" id="priceDiesel" value="60" style="width: 50px;"></label>
+        <button id="updatePricesBtn" class="btn-secondary" style="width: auto; padding: 8px 12px; margin: 0;">ОК</button>
     </div>
 </div>
+
 
                 <button id="clearHistoryBtn" class="btn-warning">Закрыть смену (Сброс кассы)</button>
             </div>
