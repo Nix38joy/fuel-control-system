@@ -136,5 +136,15 @@ renderPumps();
 renderTransactions();
 totalRevenueDisplay.innerText = getTotalRevenue();
 
+const updatePricesBtn = document.getElementById('updatePricesBtn');
+
+updatePricesBtn.addEventListener('click', () => {
+    fuelPrices['92'] = Number(document.getElementById('price92').value);
+    fuelPrices['95'] = Number(document.getElementById('price95').value);
+    
+    statusMessage.innerText = `Цены обновлены: 92-й (${fuelPrices['92']}р), 95-й (${fuelPrices['95']}р)`;
+    console.log("Новые цены:", fuelPrices);
+});
+
 
 
