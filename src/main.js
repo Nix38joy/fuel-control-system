@@ -135,17 +135,49 @@ cancelBtn.addEventListener('click', () => {
     statusMessage.innerText = 'Готов к работе';
 });
 
+function generateShiftReport() {
+    const report = {
+        '92': { liters: 0, money: 0 },
+        '95': { liters: 0, money: 0 },
+        '98': { liters: 0, money: 0 },
+        'diesel': { liters: 0, money: 0 }
+    };
+
+    transactionHistory.forEach(t => {
+        const liters = calculateLiters(t.amount, t.fuel, t.withCard);
+        report[t.fuel].liters += Number(liters);
+        report[t.fuel].money += t.amount;
+    });
+
+    let message = "ОТЧЕТ ЗА СМЕНУ:\n\n";
+    for (let fuel in report) {
+        if (report[fuel].money > 0) {
+            message += `${fuel.toUpperCase()}: ${report[fuel].liters.toFixed(2)} л — ${report[fuel].money} р\n`;
+        }
+    }
+    message += `\nИТОГО ВЫРУЧКА: ${getTotalRevenue()} р`;
+    return message;
+}
+
+
 // Кнопка ЗАКРЫТЬ СМЕНУ
 clearHistoryBtn.addEventListener('click', () => {
-    if (confirm("ЗАКРЫТЬ СМЕНУ? Все данные будут удалены!")) {
+    const report = generateShiftReport();
+    
+    // Сначала показываем отчет
+    alert(report);
+
+    // Потом спрашиваем подтверждение на сброс
+    if (confirm("Выгрузить отчет и ОБНУЛИТЬ КАССУ?")) {
         transactionHistory.length = 0;
         localStorage.removeItem('fuelTransactions');
         totalRevenueDisplay.innerText = '0';
-        statusMessage.innerText = 'Смена закрыта. Касса обнулена.';
+        statusMessage.innerText = 'Смена закрыта. Данные архивированы.';
         renderTransactions();
-        renderStorage();
+        // Мы НЕ обнуляем топливо в бочках, так как оно потрачено физически
     }
 });
+
 
 // Кнопка ОБНОВИТЬ ЦЕНЫ
 const updatePricesBtn = document.getElementById('updatePricesBtn');
