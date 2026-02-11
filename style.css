@@ -195,3 +195,26 @@ button {
     color: #27ae60; 
     font-weight: bold;
 }
+
+.storage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    margin-bottom: 20px;
+}
+
+.storage-item {
+    font-size: 14px;
+    color: #888;
+    display: flex;
+    justify-content: space-between;
+}
+
+.storage-item span {
+    color: #27ae60;
+    font-weight: bold;
+}

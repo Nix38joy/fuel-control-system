@@ -11,7 +11,7 @@ function startDispenser(money, fuelType, hasCard) {
         return { message: limitResult, success: false };
     }
 
-    // 2. Проверка остатка в бочках (fuelStorage из stationManager.js)
+    // 2. Проверка остатка в бочках (учитываем скидку при расчете нужных литров)
     const litersNeeded = calculateLiters(money, fuelType, hasCard);
     if (fuelStorage[fuelType] < litersNeeded) {
         return { message: `Недостаточно топлива! В наличии: ${fuelStorage[fuelType]} л`, success: false };
@@ -28,13 +28,14 @@ function startDispenser(money, fuelType, hasCard) {
         amount: money,
         fuel: fuelType,
         pumpId: pump.id,
-        time: new Date().toLocaleTimeString()
+        time: new Date().toLocaleTimeString(),
+        withCard: hasCard
     });
     
     localStorage.setItem('fuelTransactions', JSON.stringify(transactionHistory));
 
     return { 
-        message: `Успех! Проезжайте к колонке №${pump.id} (${litersNeeded} л)`, 
+        message: `Успех! Проезжайте к колонке №${pump.id} (${Number(litersNeeded).toFixed(2)} л)`, 
         success: true, 
         pump: pump 
     };
@@ -56,6 +57,7 @@ const statusMessage = document.getElementById('statusMessage');
 const totalRevenueDisplay = document.getElementById('totalRevenue');
 const pumpsGrid = document.getElementById('pumpsGrid');
 const transactionsList = document.getElementById('transactionsList');
+const storageStatus = document.getElementById('storageStatus');
 
 function renderPumps() {
     pumpsGrid.innerHTML = '';
@@ -73,10 +75,20 @@ function renderTransactions() {
     [...transactionHistory].reverse().slice(0, 10).forEach(t => {
         const item = document.createElement('div');
         item.className = 'transaction-item fade-in';
-        item.innerHTML = `<span>+ ${t.amount} р</span><span>№${t.pumpId}</span><span>${t.time}</span>`;
+        item.innerHTML = `<span>+ ${t.amount} р</span><span>№${t.pumpId} ${t.withCard ? '💳' : ''}</span><span>${t.time}</span>`;
         transactionsList.appendChild(item);
-       
     });
+}
+
+function renderStorage() {
+    if (!storageStatus) return;
+    storageStatus.innerHTML = '';
+    for (let fuel in fuelStorage) {
+        const item = document.createElement('div');
+        item.className = 'storage-item';
+        item.innerHTML = `${fuel.toUpperCase()}: <span>${fuelStorage[fuel]} л</span>`;
+        storageStatus.appendChild(item);
+    }
 }
 
 // Кнопка ЗАПРАВИТЬ
@@ -85,22 +97,23 @@ startBtn.addEventListener('click', () => {
     const fuelType = fuelSelect.value;
     const hasCard = cardCheckbox.checked;
 
+    if (isNaN(money) || money <= 0) {
+        statusMessage.innerText = "Ошибка: введите корректную сумму!";
+        return;
+    }
+
     const response = startDispenser(money, fuelType, hasCard);
     statusMessage.innerText = response.message;
 
-    if (isNaN(money) || money <= 0) {
-    statusMessage.innerText = "Ошибка: введите корректную сумму!";
-    return;
-}
-
     if (response.success) {
-        // Списание литров
+        // Списание литров с учетом скидки
         const liters = calculateLiters(money, fuelType, hasCard);
         fuelStorage[fuelType] = Number((fuelStorage[fuelType] - liters).toFixed(2));
         
         reservePump(response.pump.id);
         renderPumps();
         renderTransactions();
+        renderStorage(); // Обновляем остатки на экране
         totalRevenueDisplay.innerText = getTotalRevenue();
 
         setTimeout(() => {
@@ -128,29 +141,27 @@ clearHistoryBtn.addEventListener('click', () => {
         totalRevenueDisplay.innerText = '0';
         statusMessage.innerText = 'Смена закрыта. Касса обнулена.';
         renderTransactions();
+        renderStorage();
     }
 });
 
-// Старт
+// Кнопка ОБНОВИТЬ ЦЕНЫ
+const updatePricesBtn = document.getElementById('updatePricesBtn');
+if (updatePricesBtn) {
+    updatePricesBtn.addEventListener('click', () => {
+        fuelPrices['92'] = Number(document.getElementById('price92').value);
+        fuelPrices['95'] = Number(document.getElementById('price95').value);
+        fuelPrices['98'] = Number(document.getElementById('price98').value);
+        fuelPrices['diesel'] = Number(document.getElementById('priceDiesel').value);
+        statusMessage.innerText = "Цены на все виды топлива обновлены!";
+    });
+}
+
+// Старт системы
 renderPumps();
 renderTransactions();
+renderStorage();
 totalRevenueDisplay.innerText = getTotalRevenue();
-
-const updatePricesBtn = document.getElementById('updatePricesBtn');
-
-updatePricesBtn.addEventListener('click', () => {
-    // Собираем значения из всех полей ввода
-    fuelPrices['92'] = Number(document.getElementById('price92').value);
-    fuelPrices['95'] = Number(document.getElementById('price95').value);
-    fuelPrices['98'] = Number(document.getElementById('price98').value);
-    fuelPrices['diesel'] = Number(document.getElementById('priceDiesel').value);
-    
-    // Выводим уведомление оператору
-    statusMessage.innerText = "Цены на все виды топлива обновлены!";
-    
-    // Лог в консоль для проверки (F12)
-    console.log("Новый прайс-лист:", fuelPrices);
-});
 
 
 
