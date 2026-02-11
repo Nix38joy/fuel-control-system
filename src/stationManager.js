@@ -1,9 +1,12 @@
-const fuelStorage = {
+
+const savedStorage = localStorage.getItem('fuelInventory');
+const fuelStorage = savedStorage ? JSON.parse(savedStorage) : {
     '92': 5000,
     '95': 3000,
     '98': 1500,
     'diesel': 10000
 };
+
 
 
 const pumps = [

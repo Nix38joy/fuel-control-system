@@ -109,6 +109,8 @@ startBtn.addEventListener('click', () => {
         // Списание литров с учетом скидки
         const liters = calculateLiters(money, fuelType, hasCard);
         fuelStorage[fuelType] = Number((fuelStorage[fuelType] - liters).toFixed(2));
+        localStorage.setItem('fuelInventory', JSON.stringify(fuelStorage));
+
         
         reservePump(response.pump.id);
         renderPumps();
