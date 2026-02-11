@@ -2,28 +2,31 @@
 const savedTransactions = localStorage.getItem('fuelTransactions');
 const transactionHistory = savedTransactions ? JSON.parse(savedTransactions) : [];
 
+// Примечание: fuelStorage и fuelPrices подтягиваются автоматически из других файлов
+
 // --- ГЛАВНАЯ ЛОГИКА ---
 
 function startDispenser(money, fuelType, hasCard) {
     // 1. Лимиты по деньгам
     const limitResult = calculateFuelLimit(money, fuelType, hasCard);
-    if (limitResult !== "success") {
-        return { message: limitResult, success: false };
+    if (limitResult !== "success") return { message: limitResult, success: false };
+
+    // 2. Проверка на наличие топлива вообще
+    if (Number(fuelStorage[fuelType]) <= 0) {
+        return { message: `ОШИБКА: Топливо ${fuelType} закончилось!`, success: false };
     }
 
-    // 2. Проверка остатка в бочках (учитываем скидку при расчете нужных литров)
+    // 3. Расчет литров и проверка остатка в бочке
     const litersNeeded = calculateLiters(money, fuelType, hasCard);
-    if (fuelStorage[fuelType] < litersNeeded) {
+    if (Number(fuelStorage[fuelType]) < litersNeeded) {
         return { message: `Недостаточно топлива! В наличии: ${fuelStorage[fuelType]} л`, success: false };
     }
 
-    // 3. Поиск колонки
+    // 4. Поиск свободной колонки
     const pump = findPumpByFuel(fuelType);
-    if (!pump) {
-        return { message: `Извините, все колонки для "${fuelType}" сейчас заняты.`, success: false };
-    }
+    if (!pump) return { message: `Извините, все колонки для "${fuelType}" заняты.`, success: false };
 
-    // 4. Успех: сохраняем транзакцию
+    // 5. Успех: сохраняем транзакцию
     transactionHistory.push({
         amount: money,
         fuel: fuelType,
@@ -58,6 +61,8 @@ const totalRevenueDisplay = document.getElementById('totalRevenue');
 const pumpsGrid = document.getElementById('pumpsGrid');
 const transactionsList = document.getElementById('transactionsList');
 const storageStatus = document.getElementById('storageStatus');
+const reportModal = document.getElementById('reportModal');
+const reportData = document.getElementById('reportData');
 
 function renderPumps() {
     pumpsGrid.innerHTML = '';
@@ -83,12 +88,40 @@ function renderTransactions() {
 function renderStorage() {
     if (!storageStatus) return;
     storageStatus.innerHTML = '';
+    
     for (let fuel in fuelStorage) {
+        const amount = Number(fuelStorage[fuel]);
         const item = document.createElement('div');
         item.className = 'storage-item';
-        item.innerHTML = `${fuel.toUpperCase()}: <span>${fuelStorage[fuel]} л</span>`;
+        
+        let statusClass = '';
+        if (amount <= 0) {
+            statusClass = 'out-of-stock';
+        } else if (amount < 100) {
+            statusClass = 'critical-low';
+        }
+
+        item.innerHTML = `${fuel.toUpperCase()}: <span class="${statusClass}">${amount.toFixed(2)} л</span>`;
         storageStatus.appendChild(item);
     }
+}
+
+function generateShiftReportHTML() {
+    const report = { '92': { l: 0, r: 0 }, '95': { l: 0, r: 0 }, '98': { l: 0, r: 0 }, 'diesel': { l: 0, r: 0 } };
+    transactionHistory.forEach(t => {
+        const liters = calculateLiters(t.amount, t.fuel, t.withCard);
+        report[t.fuel].l += Number(liters);
+        report[t.fuel].r += t.amount;
+    });
+
+    let html = "";
+    for (let f in report) {
+        if (report[f].r > 0) {
+            html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л <br> Сумма: ${report[f].r} р</p>`;
+        }
+    }
+    html += `<hr><h3>ИТОГО ВЫРУЧКА: ${getTotalRevenue()} р</h3>`;
+    return html;
 }
 
 // Кнопка ЗАПРАВИТЬ
@@ -106,16 +139,17 @@ startBtn.addEventListener('click', () => {
     statusMessage.innerText = response.message;
 
     if (response.success) {
-        // Списание литров с учетом скидки
+        // Списание литров
         const liters = calculateLiters(money, fuelType, hasCard);
-        fuelStorage[fuelType] = Number((fuelStorage[fuelType] - liters).toFixed(2));
+        fuelStorage[fuelType] = Number((Number(fuelStorage[fuelType]) - liters).toFixed(2));
+        
+        // Сохраняем новый остаток в память
         localStorage.setItem('fuelInventory', JSON.stringify(fuelStorage));
-
         
         reservePump(response.pump.id);
         renderPumps();
         renderTransactions();
-        renderStorage(); // Обновляем остатки на экране
+        renderStorage();
         totalRevenueDisplay.innerText = getTotalRevenue();
 
         setTimeout(() => {
@@ -127,88 +161,30 @@ startBtn.addEventListener('click', () => {
     moneyInput.value = '';
 });
 
-// Кнопка ОЧИСТИТЬ ПОЛЯ
-cancelBtn.addEventListener('click', () => {
-    moneyInput.value = '';
-    fuelSelect.value = '92';
-    cardCheckbox.checked = false;
-    statusMessage.innerText = 'Готов к работе';
-});
-
-function generateShiftReport() {
-    const report = {
-        '92': { liters: 0, money: 0 },
-        '95': { liters: 0, money: 0 },
-        '98': { liters: 0, money: 0 },
-        'diesel': { liters: 0, money: 0 }
-    };
-
-    transactionHistory.forEach(t => {
-        const liters = calculateLiters(t.amount, t.fuel, t.withCard);
-        report[t.fuel].liters += Number(liters);
-        report[t.fuel].money += t.amount;
-    });
-
-    let message = "ОТЧЕТ ЗА СМЕНУ:\n\n";
-    for (let fuel in report) {
-        if (report[fuel].money > 0) {
-            message += `${fuel.toUpperCase()}: ${report[fuel].liters.toFixed(2)} л — ${report[fuel].money} р\n`;
-        }
-    }
-    message += `\nИТОГО ВЫРУЧКА: ${getTotalRevenue()} р`;
-    return message;
-}
-
-
-// Кнопка ЗАКРЫТЬ СМЕНУ
-const reportModal = document.getElementById('reportModal');
-const reportData = document.getElementById('reportData');
-const closeModal = document.querySelector('.close-modal');
-const confirmCloseShift = document.getElementById('confirmCloseShift');
-
+// Кнопка ЗАКРЫТЬ СМЕНУ (Модальное окно)
 clearHistoryBtn.addEventListener('click', () => {
-    const reportHtml = generateShiftReportHTML(); // Создадим ее ниже
-    reportData.innerHTML = reportHtml;
+    reportData.innerHTML = generateShiftReportHTML();
     reportModal.style.display = "block";
 });
 
-// Закрытие модалки на крестик
-closeModal.onclick = () => reportModal.style.display = "none";
+// Закрытие модалки
+document.querySelector('.close-modal').onclick = () => {
+    reportModal.style.display = "none";
+};
 
-// Финальное обнуление внутри модалки
-confirmCloseShift.onclick = () => {
-    if (confirm("Точно обнулить кассу?")) {
+// Подтверждение обнуления внутри модалки
+document.getElementById('confirmCloseShift').onclick = () => {
+    if (confirm("Выгрузить отчет и ОБНУЛИТЬ КАССУ?")) {
         transactionHistory.length = 0;
         localStorage.removeItem('fuelTransactions');
         totalRevenueDisplay.innerText = '0';
         reportModal.style.display = "none";
         renderTransactions();
-        renderStorage();
-        statusMessage.innerText = 'Смена закрыта. Касса пуста.';
+        statusMessage.innerText = 'Смена закрыта. Касса обнулена.';
     }
 };
 
-// Вспомогательная функция для красивой верстки отчета
-function generateShiftReportHTML() {
-    const report = { '92': { l: 0, r: 0 }, '95': { l: 0, r: 0 }, '98': { l: 0, r: 0 }, 'diesel': { l: 0, r: 0 } };
-    transactionHistory.forEach(t => {
-        report[t.fuel].l += Number(calculateLiters(t.amount, t.fuel, t.withCard));
-        report[t.fuel].r += t.amount;
-    });
-
-    let html = "";
-    for (let f in report) {
-        if (report[f].r > 0) {
-            html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л <br> Сумма: ${report[f].r} р</p>`;
-        }
-    }
-    html += `<hr><h3>ИТОГО: ${getTotalRevenue()} р</h3>`;
-    return html;
-}
-
-
-
-// Кнопка ОБНОВИТЬ ЦЕНЫ
+// ОБНОВИТЬ ЦЕНЫ
 const updatePricesBtn = document.getElementById('updatePricesBtn');
 if (updatePricesBtn) {
     updatePricesBtn.addEventListener('click', () => {
@@ -220,7 +196,7 @@ if (updatePricesBtn) {
     });
 }
 
-// Старт системы
+// СТАРТ СИСТЕМЫ
 renderPumps();
 renderTransactions();
 renderStorage();

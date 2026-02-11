@@ -225,3 +225,21 @@ button {
 .receipt-header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; }
 .receipt-body { padding: 20px 0; line-height: 1.6; }
 .receipt-footer { border-top: 2px dashed #333; padding-top: 10px; text-align: center; }
+
+/* Анимация мигания для критического остатка */
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+.critical-low {
+    color: #e74c3c !important; /* Яркий красный */
+    animation: blink 1s infinite;
+    font-weight: bold;
+}
+
+.out-of-stock {
+    color: #7f8c8d !important; /* Серый для пустых бочек */
+    text-decoration: line-through;
+}
