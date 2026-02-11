@@ -161,22 +161,51 @@ function generateShiftReport() {
 
 
 // Кнопка ЗАКРЫТЬ СМЕНУ
-clearHistoryBtn.addEventListener('click', () => {
-    const report = generateShiftReport();
-    
-    // Сначала показываем отчет
-    alert(report);
+const reportModal = document.getElementById('reportModal');
+const reportData = document.getElementById('reportData');
+const closeModal = document.querySelector('.close-modal');
+const confirmCloseShift = document.getElementById('confirmCloseShift');
 
-    // Потом спрашиваем подтверждение на сброс
-    if (confirm("Выгрузить отчет и ОБНУЛИТЬ КАССУ?")) {
+clearHistoryBtn.addEventListener('click', () => {
+    const reportHtml = generateShiftReportHTML(); // Создадим ее ниже
+    reportData.innerHTML = reportHtml;
+    reportModal.style.display = "block";
+});
+
+// Закрытие модалки на крестик
+closeModal.onclick = () => reportModal.style.display = "none";
+
+// Финальное обнуление внутри модалки
+confirmCloseShift.onclick = () => {
+    if (confirm("Точно обнулить кассу?")) {
         transactionHistory.length = 0;
         localStorage.removeItem('fuelTransactions');
         totalRevenueDisplay.innerText = '0';
-        statusMessage.innerText = 'Смена закрыта. Данные архивированы.';
+        reportModal.style.display = "none";
         renderTransactions();
-        // Мы НЕ обнуляем топливо в бочках, так как оно потрачено физически
+        renderStorage();
+        statusMessage.innerText = 'Смена закрыта. Касса пуста.';
     }
-});
+};
+
+// Вспомогательная функция для красивой верстки отчета
+function generateShiftReportHTML() {
+    const report = { '92': { l: 0, r: 0 }, '95': { l: 0, r: 0 }, '98': { l: 0, r: 0 }, 'diesel': { l: 0, r: 0 } };
+    transactionHistory.forEach(t => {
+        report[t.fuel].l += Number(calculateLiters(t.amount, t.fuel, t.withCard));
+        report[t.fuel].r += t.amount;
+    });
+
+    let html = "";
+    for (let f in report) {
+        if (report[f].r > 0) {
+            html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л <br> Сумма: ${report[f].r} р</p>`;
+        }
+    }
+    html += `<hr><h3>ИТОГО: ${getTotalRevenue()} р</h3>`;
+    return html;
+}
+
 
 
 // Кнопка ОБНОВИТЬ ЦЕНЫ

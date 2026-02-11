@@ -88,6 +88,23 @@
         </div>
     </div>
 
+    <div id="reportModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div id="receiptArea">
+            <h2 class="receipt-header">ИТОГОВЫЙ ЧЕК СМЕНЫ</h2>
+            <div id="reportData" class="receipt-body">
+                <!-- Сюда JS вставит данные -->
+            </div>
+            <div class="receipt-footer">
+                <p>СПАСИБО ЗА РАБОТУ!</p>
+                <button id="confirmCloseShift" class="btn-warning">ОБНУЛИТЬ И ЗАКРЫТЬ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
     <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ (ПОРЯДОК ВАЖЕН!) -->
     <script src="src/priceEngine.js"></script>
     <script src="src/stationManager.js"></script>
