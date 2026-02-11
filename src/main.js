@@ -224,15 +224,22 @@ document.querySelector('.close-modal').onclick = () => {
 
 // Подтверждение обнуления внутри модалки
 document.getElementById('confirmCloseShift').onclick = () => {
-    if (confirm("Выгрузить отчет и ОБНУЛИТЬ КАССУ?")) {
+    if (confirm("Выгрузить отчет и ОБНУЛИТЬ КАССУ И ТОПЛИВО?")) {
         transactionHistory.length = 0;
-        localStorage.removeItem('fuelTransactions');
+        localStorage.removeItem('fuelTransactions'); // Сброс чеков
+        
+        // --- ДОБАВЬ ЭТУ СТРОКУ ---
+        localStorage.removeItem('fuelInventory');    // Сброс бочек к начальным значениям
+        // -------------------------
+
         totalRevenueDisplay.innerText = '0';
         reportModal.style.display = "none";
-        renderTransactions();
-        statusMessage.innerText = 'Смена закрыта. Касса обнулена.';
+        
+        // Перезагрузим страницу, чтобы stationManager подтянул дефолтные 5000/3000 л
+        location.reload(); 
     }
 };
+
 
 // ОБНОВИТЬ ЦЕНЫ
 const updatePricesBtn = document.getElementById('updatePricesBtn');
