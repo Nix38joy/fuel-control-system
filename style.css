@@ -1,7 +1,7 @@
-/* Базовые настройки */
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212; /* Глубокий темный */
+    background-color: #121212; 
     color: #e0e0e0;
     display: flex;
     justify-content: center;
@@ -26,7 +26,7 @@ h1 {
     letter-spacing: 1px;
 }
 
-/* Панель управления */
+
 .control-panel {
     background: #252525;
     padding: 20px;
@@ -56,7 +56,7 @@ input:focus {
     border-color: #27ae60;
 }
 
-/* Кнопки */
+
 .actions {
     display: flex;
     gap: 10px;
@@ -94,7 +94,7 @@ button {
     background: #555;
 }
 
-/* Сетка колонок */
+
 .pumps-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -108,10 +108,10 @@ button {
     border-radius: 12px;
     text-align: center;
     border-top: 4px solid #555;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); /* Плавная анимация цвета */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
 }
 
-/* Статусы колонок с неоновым эффектом */
+
 .available { 
     border-top-color: #27ae60; 
     box-shadow: inset 0 0 10px rgba(39, 174, 96, 0.1);
@@ -128,7 +128,7 @@ button {
     opacity: 0.6;
 }
 
-/* Панель статуса */
+
 .status-panel {
     background: #252525;
     padding: 20px;
@@ -148,7 +148,7 @@ button {
     color: #2ecc71;
 }
 
-/* Админка */
+
 .btn-warning {
     background: transparent;
     border: 1px solid #444;
@@ -162,7 +162,7 @@ button {
     color: #e74c3c;
 }
 
-/* Анимация появления текста */
+
 .fade-in {
     animation: fadeIn 0.5s ease-in;
 }
@@ -192,6 +192,6 @@ button {
 }
 
 .transaction-item span:first-child {
-    color: #27ae60; /* Сумма будет зеленой */
+    color: #27ae60; 
     font-weight: bold;
 }

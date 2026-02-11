@@ -12,7 +12,7 @@ function startDispenser(money, fuelType, hasCard) {
     }
 
     // 2. Проверка остатка в бочках (fuelStorage из stationManager.js)
-    const litersNeeded = calculateLiters(money, fuelType);
+    const litersNeeded = calculateLiters(money, fuelType, hasCard);
     if (fuelStorage[fuelType] < litersNeeded) {
         return { message: `Недостаточно топлива! В наличии: ${fuelStorage[fuelType]} л`, success: false };
     }
@@ -95,7 +95,7 @@ startBtn.addEventListener('click', () => {
 
     if (response.success) {
         // Списание литров
-        const liters = calculateLiters(money, fuelType);
+        const liters = calculateLiters(money, fuelType, hasCard);
         fuelStorage[fuelType] = Number((fuelStorage[fuelType] - liters).toFixed(2));
         
         reservePump(response.pump.id);

@@ -29,8 +29,13 @@ function calculateFuelLimit(money, fuelType, hasCard) {
     return "success"; 
 }
 
-function calculateLiters(money, fuelType) {
-    return (money / fuelPrices[fuelType]).toFixed(2);
+function calculateLiters(money, fuelType, hasCard) {
+    let price = fuelPrices [fuelType];
+
+    if (hasCard) {
+        price = price * 0.98;
+    }
+    return (money / price).toFixed(2);
 }
 
 
