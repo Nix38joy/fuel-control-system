@@ -245,12 +245,26 @@ document.getElementById('confirmCloseShift').onclick = () => {
 const updatePricesBtn = document.getElementById('updatePricesBtn');
 if (updatePricesBtn) {
     updatePricesBtn.addEventListener('click', () => {
-        fuelPrices['92'] = Number(document.getElementById('price92').value);
-        fuelPrices['95'] = Number(document.getElementById('price95').value);
-        fuelPrices['98'] = Number(document.getElementById('price98').value);
-        fuelPrices['diesel'] = Number(document.getElementById('priceDiesel').value);
-        statusMessage.innerText = "Цены на все виды топлива обновлены!";
-    });
+    const p92 = Number(document.getElementById('price92').value);
+    const p95 = Number(document.getElementById('price95').value);
+    const p98 = Number(document.getElementById('price98').value);
+    const pDiesel = Number(document.getElementById('priceDiesel').value);
+
+    // Валидация: если цена слишком низкая или не число
+    if (p92 < 1 || p95 < 1 || p98 < 1 || pDiesel < 1) {
+        statusMessage.innerText = "ОШИБКА: Цена не может быть меньше 1 руб!";
+        statusMessage.style.color = "#e74c3c";
+        return;
+    }
+
+    fuelPrices['92'] = p92;
+    fuelPrices['95'] = p95;
+    fuelPrices['98'] = p98;
+    fuelPrices['diesel'] = pDiesel;
+    
+    statusMessage.innerText = "Цены успешно обновлены!";
+    statusMessage.style.color = "#27ae60";
+});
 }
 
 // СТАРТ СИСТЕМЫ
