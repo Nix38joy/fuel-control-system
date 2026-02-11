@@ -69,10 +69,22 @@ function renderPumps() {
     pumps.forEach(pump => {
         const pumpDiv = document.createElement('div');
         pumpDiv.className = `pump-card ${pump.status}`;
-        pumpDiv.innerHTML = `<h3>Колонка №${pump.id}</h3><p>Топливо: ${pump.fuelType}</p><small>${pump.status === 'available' ? 'Свободна' : 'Занята'}</small>`;
+        
+        // Добавляем верстку прогресс-бара, который виден только когда колонка занята
+        const progressBarHtml = pump.status === 'busy' 
+            ? `<div class="progress-container"><div id="bar-${pump.id}" class="progress-bar"></div></div>` 
+            : '';
+
+        pumpDiv.innerHTML = `
+            <h3>Колонка №${pump.id}</h3>
+            <p>Топливо: ${pump.fuelType}</p>
+            ${progressBarHtml}
+            <small>${pump.status === 'available' ? 'Свободна' : 'Заправка...'}</small>
+        `;
         pumpsGrid.appendChild(pumpDiv);
     });
 }
+
 
 function renderTransactions() {
     if (!transactionsList) return;
@@ -124,6 +136,30 @@ function generateShiftReportHTML() {
     return html;
 }
 
+// --- ЛОГИКА АНИМАЦИИ ---
+function animateProgress(pumpId, duration) {
+    // Ждем микросекунду, чтобы DOM успел отрисовать полоску после renderPumps
+    setTimeout(() => {
+        const bar = document.getElementById(`bar-${pumpId}`);
+        if (!bar) return;
+
+        let start = null;
+        function step(timestamp) {
+            if (!start) start = timestamp;
+            const elapsed = timestamp - start;
+            const percentage = Math.min((elapsed / duration) * 100, 100);
+            
+            bar.style.width = percentage + '%';
+
+            if (elapsed < duration) {
+                window.requestAnimationFrame(step);
+            }
+        }
+        window.requestAnimationFrame(step);
+    }, 50); 
+}
+
+
 // Кнопка ЗАПРАВИТЬ
 startBtn.addEventListener('click', () => {
     const money = Number(moneyInput.value);
@@ -148,6 +184,20 @@ startBtn.addEventListener('click', () => {
         
         reservePump(response.pump.id);
         renderPumps();
+            if (response.success) {
+        // ... твой код списания литров ...
+        
+        reservePump(response.pump.id);
+        renderPumps(); // Сначала рисуем карточку с пустым баром
+        
+        // ВЫЗОВ ТУТ:
+        animateProgress(response.pump.id, 10000); 
+
+        renderTransactions();
+        renderStorage();
+        // ... дальше setTimeout на 10 секунд ...
+    }
+
         renderTransactions();
         renderStorage();
         totalRevenueDisplay.innerText = getTotalRevenue();

@@ -243,3 +243,19 @@ button {
     color: #7f8c8d !important; /* Серый для пустых бочек */
     text-decoration: line-through;
 }
+
+.progress-container {
+    width: 100%;
+    background-color: #333;
+    border-radius: 10px;
+    margin: 10px 0;
+    height: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 0%; /* Начинаем с нуля */
+    height: 100%;
+    background-color: #27ae60;
+    transition: width 0.1s linear; /* Плавное движение */
+}
