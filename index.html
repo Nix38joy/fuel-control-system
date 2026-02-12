@@ -26,7 +26,8 @@
                     <option value="diesel">Дизель</option>
                 </select>
             </div>
-            
+
+
             <div class="options-group">
                 <label>
                     <input type="checkbox" id="cardCheckbox"> Есть карта лояльности
@@ -38,6 +39,13 @@
                 <button id="cancelBtn" class="btn-secondary">Очистить поля</button>
             </div>
         </div>
+
+                   <div class="queue-section" style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px;">
+    <h4>⏳ Очередь (Ожидание): <span id="queueCount">0</span></h4>
+    <div id="queueList" style="display: flex; gap: 10px; flex-wrap: wrap; min-height: 30px;">
+        <!-- Сюда JS будет добавлять машины -->
+    </div>
+</div>
 
         <!-- БЛОК 2: ВИЗУАЛИЗАЦИЯ КОЛОНОК (СЮДА РИСУЕТ JS) -->
         <div id="pumpsGrid" class="pumps-grid">
@@ -83,6 +91,8 @@
     </div>
 </div>
 
+            
+ 
 
                 <button id="clearHistoryBtn" class="btn-warning">Закрыть смену (Сброс кассы)</button>
             </div>

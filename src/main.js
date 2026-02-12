@@ -1,58 +1,90 @@
-// --- СОСТОЯНИЕ (ЗАГРУЗКА ИЗ ПАМЯТИ) ---
+// --- 1. СОСТОЯНИЕ (ДАННЫЕ) ---
 const savedTransactions = localStorage.getItem('fuelTransactions');
 const transactionHistory = savedTransactions ? JSON.parse(savedTransactions) : [];
 
-// Примечание: fuelStorage и fuelPrices подтягиваются автоматически из других файлов
+// ОЧЕРЕДЬ (Массив ожидания)
+const waitingQueue = []; 
 
-// --- ГЛАВНАЯ ЛОГИКА ---
+// --- 2. ГЛАВНАЯ ЛОГИКА (МОЗГИ) ---
 
+// Проверка возможности заправки (хватает ли места, денег и топлива)
 function startDispenser(money, fuelType, hasCard) {
-    // 1. Лимиты по деньгам
     const limitResult = calculateFuelLimit(money, fuelType, hasCard);
     if (limitResult !== "success") return { message: limitResult, success: false };
 
-    // 2. Проверка на наличие топлива вообще
     if (Number(fuelStorage[fuelType]) <= 0) {
         return { message: `ОШИБКА: Топливо ${fuelType} закончилось!`, success: false };
     }
 
-    // 3. Расчет литров и проверка остатка в бочке
     const litersNeeded = calculateLiters(money, fuelType, hasCard);
     if (Number(fuelStorage[fuelType]) < litersNeeded) {
         return { message: `Недостаточно топлива! В наличии: ${fuelStorage[fuelType]} л`, success: false };
     }
 
-    // 4. Поиск свободной колонки
     const pump = findPumpByFuel(fuelType);
-    if (!pump) return { message: `Извините, все колонки для "${fuelType}" заняты.`, success: false };
-
-    // 5. Успех: сохраняем транзакцию
-    transactionHistory.push({
-        amount: money,
-        fuel: fuelType,
-        pumpId: pump.id,
-        time: new Date().toLocaleTimeString(),
-        withCard: hasCard
-    });
-    
-    localStorage.setItem('fuelTransactions', JSON.stringify(transactionHistory));
+    if (!pump) return { message: `Все колонки для "${fuelType}" заняты.`, success: false };
 
     return { 
-        message: `Успех! Проезжайте к колонке №${pump.id} (${Number(litersNeeded).toFixed(2)} л)`, 
         success: true, 
-        pump: pump 
+        pump: pump,
+        liters: Number(litersNeeded)
     };
 }
 
-function getTotalRevenue() {
-    return transactionHistory.reduce((total, t) => total + t.amount, 0);
+// Универсальный запуск заправки (и для кнопки, и для очереди)
+function runRefuel(money, fuelType, hasCard, pump, liters) {
+    // 1. Списание топлива
+    fuelStorage[fuelType] = Number((Number(fuelStorage[fuelType]) - liters).toFixed(2));
+    localStorage.setItem('fuelInventory', JSON.stringify(fuelStorage));
+
+    // 2. Резерв колонки и визуал
+    reservePump(pump.id);
+    renderPumps();
+    renderStorage();
+    animateProgress(pump.id, 30000); // 30 секунд
+
+    // 3. Сохранение транзакции в историю
+    transactionHistory.push({
+        amount: money, fuel: fuelType, pumpId: pump.id, 
+        time: new Date().toLocaleTimeString(), withCard: hasCard
+    });
+    localStorage.setItem('fuelTransactions', JSON.stringify(transactionHistory));
+    renderTransactions();
+    totalRevenueDisplay.innerText = getTotalRevenue();
+
+    // 4. Таймер освобождения
+    setTimeout(() => {
+        releasePump(pump.id);
+        renderPumps();
+        statusMessage.innerText = `Колонка №${pump.id} свободна`;
+        
+        // ПРОВЕРЯЕМ ОЧЕРЕДЬ, когда кто-то уехал!
+        checkQueue(); 
+    }, 30000);
 }
 
-// --- ИНТЕРФЕЙС ---
+// Автоматический поиск машины в очереди
+function checkQueue() {
+    if (waitingQueue.length === 0) return;
+
+    for (let i = 0; i < waitingQueue.length; i++) {
+        const car = waitingQueue[i];
+        const check = startDispenser(car.money, car.fuelType, car.hasCard);
+
+        if (check.success) {
+            // Машина нашла место! Удаляем из очереди и заправляем
+            waitingQueue.splice(i, 1);
+            renderQueue();
+            runRefuel(car.money, car.fuelType, car.hasCard, check.pump, check.liters);
+            statusMessage.innerText = `Машина из очереди поехала на колонку №${check.pump.id}`;
+            break; // Берем по одной машине за раз
+        }
+    }
+}
+
+// --- 3. ИНТЕРФЕЙС (ОТРИСОВКА) ---
 
 const startBtn = document.getElementById('startBtn');
-const cancelBtn = document.getElementById('cancelBtn');
-const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const moneyInput = document.getElementById('moneyInput');
 const fuelSelect = document.getElementById('fuelSelect');
 const cardCheckbox = document.getElementById('cardCheckbox');
@@ -61,6 +93,8 @@ const totalRevenueDisplay = document.getElementById('totalRevenue');
 const pumpsGrid = document.getElementById('pumpsGrid');
 const transactionsList = document.getElementById('transactionsList');
 const storageStatus = document.getElementById('storageStatus');
+const queueList = document.getElementById('queueList');
+const queueCount = document.getElementById('queueCount');
 const reportModal = document.getElementById('reportModal');
 const reportData = document.getElementById('reportData');
 
@@ -69,12 +103,9 @@ function renderPumps() {
     pumps.forEach(pump => {
         const pumpDiv = document.createElement('div');
         pumpDiv.className = `pump-card ${pump.status}`;
-        
-        // Добавляем верстку прогресс-бара, который виден только когда колонка занята
         const progressBarHtml = pump.status === 'busy' 
             ? `<div class="progress-container"><div id="bar-${pump.id}" class="progress-bar"></div></div>` 
             : '';
-
         pumpDiv.innerHTML = `
             <h3>Колонка №${pump.id}</h3>
             <p>Топливо: ${pump.fuelType}</p>
@@ -84,7 +115,6 @@ function renderPumps() {
         pumpsGrid.appendChild(pumpDiv);
     });
 }
-
 
 function renderTransactions() {
     if (!transactionsList) return;
@@ -100,178 +130,118 @@ function renderTransactions() {
 function renderStorage() {
     if (!storageStatus) return;
     storageStatus.innerHTML = '';
-    
     for (let fuel in fuelStorage) {
         const amount = Number(fuelStorage[fuel]);
         const item = document.createElement('div');
         item.className = 'storage-item';
-        
-        let statusClass = '';
-        if (amount <= 0) {
-            statusClass = 'out-of-stock';
-        } else if (amount < 100) {
-            statusClass = 'critical-low';
-        }
-
+        let statusClass = (amount <= 0) ? 'out-of-stock' : (amount < 100 ? 'critical-low' : '');
         item.innerHTML = `${fuel.toUpperCase()}: <span class="${statusClass}">${amount.toFixed(2)} л</span>`;
         storageStatus.appendChild(item);
     }
 }
 
-function generateShiftReportHTML() {
-    const report = { '92': { l: 0, r: 0 }, '95': { l: 0, r: 0 }, '98': { l: 0, r: 0 }, 'diesel': { l: 0, r: 0 } };
-    transactionHistory.forEach(t => {
-        const liters = calculateLiters(t.amount, t.fuel, t.withCard);
-        report[t.fuel].l += Number(liters);
-        report[t.fuel].r += t.amount;
+function renderQueue() {
+    if (!queueList) return;
+    queueList.innerHTML = '';
+    queueCount.innerText = waitingQueue.length;
+    waitingQueue.forEach((car, index) => {
+        const carDiv = document.createElement('div');
+        carDiv.className = 'queue-item fade-in';
+        carDiv.innerHTML = `<b>#${index + 1}</b> ${car.fuelType} (${car.money}р)`;
+        queueList.appendChild(carDiv);
     });
-
-    let html = "";
-    for (let f in report) {
-        if (report[f].r > 0) {
-            html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л <br> Сумма: ${report[f].r} р</p>`;
-        }
-    }
-    html += `<hr><h3>ИТОГО ВЫРУЧКА: ${getTotalRevenue()} р</h3>`;
-    return html;
 }
 
-// --- ЛОГИКА АНИМАЦИИ ---
 function animateProgress(pumpId, duration) {
-    // Ждем микросекунду, чтобы DOM успел отрисовать полоску после renderPumps
     setTimeout(() => {
         const bar = document.getElementById(`bar-${pumpId}`);
         if (!bar) return;
-
         let start = null;
         function step(timestamp) {
             if (!start) start = timestamp;
             const elapsed = timestamp - start;
-            const percentage = Math.min((elapsed / duration) * 100, 100);
-            
-            bar.style.width = percentage + '%';
-
-            if (elapsed < duration) {
-                window.requestAnimationFrame(step);
-            }
+            bar.style.width = Math.min((elapsed / duration) * 100, 100) + '%';
+            if (elapsed < duration) window.requestAnimationFrame(step);
         }
         window.requestAnimationFrame(step);
-    }, 50); 
+    }, 50);
 }
 
+function getTotalRevenue() {
+    return transactionHistory.reduce((total, t) => total + t.amount, 0);
+}
 
-// Кнопка ЗАПРАВИТЬ
+// --- 4. ОБРАБОТЧИКИ СОБЫТИЙ ---
+
 startBtn.addEventListener('click', () => {
     const money = Number(moneyInput.value);
     const fuelType = fuelSelect.value;
     const hasCard = cardCheckbox.checked;
 
     if (isNaN(money) || money <= 0) {
-        statusMessage.innerText = "Ошибка: введите корректную сумму!";
+        statusMessage.innerText = "Ошибка: введите сумму!";
         return;
     }
 
     const response = startDispenser(money, fuelType, hasCard);
-    statusMessage.innerText = response.message;
 
     if (response.success) {
-        // Списание литров
-        const liters = calculateLiters(money, fuelType, hasCard);
-        fuelStorage[fuelType] = Number((Number(fuelStorage[fuelType]) - liters).toFixed(2));
-        
-        // Сохраняем новый остаток в память
-        localStorage.setItem('fuelInventory', JSON.stringify(fuelStorage));
-        
-        reservePump(response.pump.id);
-        renderPumps();
-            if (response.success) {
-        // ... твой код списания литров ...
-        
-        reservePump(response.pump.id);
-        renderPumps(); // Сначала рисуем карточку с пустым баром
-        
-        // ВЫЗОВ ТУТ:
-        animateProgress(response.pump.id, 30000); 
-
-        renderTransactions();
-        renderStorage();
-        // ... дальше setTimeout на 10 секунд ...
-    }
-
-        renderTransactions();
-        renderStorage();
-        totalRevenueDisplay.innerText = getTotalRevenue();
-
-        setTimeout(() => {
-            releasePump(response.pump.id);
-            renderPumps();
-            statusMessage.innerText = `Колонка №${response.pump.id} освободилась!`;
-        }, 30000);
+        statusMessage.innerText = `Заправка начата: ${fuelType}`;
+        runRefuel(money, fuelType, hasCard, response.pump, response.liters);
+    } else if (response.message.includes("заняты")) {
+        // ДОБАВЛЯЕМ В ОЧЕРЕДЬ
+        waitingQueue.push({ money, fuelType, hasCard });
+        renderQueue();
+        statusMessage.innerText = "Все колонки заняты. Машина добавлена в очередь.";
+    } else {
+        statusMessage.innerText = response.message;
     }
     moneyInput.value = '';
 });
 
-// Кнопка ЗАКРЫТЬ СМЕНУ (Модальное окно)
-clearHistoryBtn.addEventListener('click', () => {
+// Отчет за смену
+function generateShiftReportHTML() {
+    const report = { '92': { l: 0, r: 0 }, '95': { l: 0, r: 0 }, '98': { l: 0, r: 0 }, 'diesel': { l: 0, r: 0 } };
+    transactionHistory.forEach(t => {
+        const l = calculateLiters(t.amount, t.fuel, t.withCard);
+        report[t.fuel].l += Number(l);
+        report[t.fuel].r += t.amount;
+    });
+    let html = "";
+    for (let f in report) { if (report[f].r > 0) html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л<br>Сумма: ${report[f].r} р</p>`; }
+    html += `<hr><h3>ИТОГО: ${getTotalRevenue()} р</h3>`;
+    return html;
+}
+
+document.getElementById('clearHistoryBtn').addEventListener('click', () => {
     reportData.innerHTML = generateShiftReportHTML();
     reportModal.style.display = "block";
 });
 
-// Закрытие модалки
-document.querySelector('.close-modal').onclick = () => {
-    reportModal.style.display = "none";
-};
+document.querySelector('.close-modal').onclick = () => reportModal.style.display = "none";
 
-// Подтверждение обнуления внутри модалки
 document.getElementById('confirmCloseShift').onclick = () => {
-    if (confirm("Выгрузить отчет и ОБНУЛИТЬ КАССУ И ТОПЛИВО?")) {
-        transactionHistory.length = 0;
-        localStorage.removeItem('fuelTransactions'); // Сброс чеков
-        
-        // --- ДОБАВЬ ЭТУ СТРОКУ ---
-        localStorage.removeItem('fuelInventory');    // Сброс бочек к начальным значениям
-        // -------------------------
-
-        totalRevenueDisplay.innerText = '0';
-        reportModal.style.display = "none";
-        
-        // Перезагрузим страницу, чтобы stationManager подтянул дефолтные 5000/3000 л
-        location.reload(); 
+    if (confirm("Сбросить смену и ТОПЛИВО?")) {
+        localStorage.clear();
+        location.reload();
     }
 };
 
-
-// ОБНОВИТЬ ЦЕНЫ
-const updatePricesBtn = document.getElementById('updatePricesBtn');
-if (updatePricesBtn) {
-    updatePricesBtn.addEventListener('click', () => {
-    const p92 = Number(document.getElementById('price92').value);
-    const p95 = Number(document.getElementById('price95').value);
-    const p98 = Number(document.getElementById('price98').value);
-    const pDiesel = Number(document.getElementById('priceDiesel').value);
-
-    // Валидация: если цена слишком низкая или не число
-    if (p92 < 1 || p95 < 1 || p98 < 1 || pDiesel < 1) {
-        statusMessage.innerText = "ОШИБКА: Цена не может быть меньше 1 руб!";
-        statusMessage.style.color = "#e74c3c";
-        return;
-    }
-
-    fuelPrices['92'] = p92;
-    fuelPrices['95'] = p95;
-    fuelPrices['98'] = p98;
-    fuelPrices['diesel'] = pDiesel;
-    
-    statusMessage.innerText = "Цены успешно обновлены!";
-    statusMessage.style.color = "#27ae60";
+document.getElementById('updatePricesBtn').addEventListener('click', () => {
+    fuelPrices['92'] = Number(document.getElementById('price92').value);
+    fuelPrices['95'] = Number(document.getElementById('price95').value);
+    fuelPrices['98'] = Number(document.getElementById('price98').value);
+    fuelPrices['diesel'] = Number(document.getElementById('priceDiesel').value);
+    statusMessage.innerText = "Цены обновлены!";
 });
-}
 
-// СТАРТ СИСТЕМЫ
+// СТАРТ
 renderPumps();
 renderTransactions();
 renderStorage();
+renderQueue();
 totalRevenueDisplay.innerText = getTotalRevenue();
+
 
 
 
