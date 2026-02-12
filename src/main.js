@@ -191,7 +191,7 @@ startBtn.addEventListener('click', () => {
         renderPumps(); // Сначала рисуем карточку с пустым баром
         
         // ВЫЗОВ ТУТ:
-        animateProgress(response.pump.id, 10000); 
+        animateProgress(response.pump.id, 30000); 
 
         renderTransactions();
         renderStorage();
@@ -206,7 +206,7 @@ startBtn.addEventListener('click', () => {
             releasePump(response.pump.id);
             renderPumps();
             statusMessage.innerText = `Колонка №${response.pump.id} освободилась!`;
-        }, 10000);
+        }, 30000);
     }
     moneyInput.value = '';
 });
