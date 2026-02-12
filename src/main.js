@@ -166,13 +166,33 @@ function renderQueue() {
     if (!queueList) return;
     queueList.innerHTML = '';
     queueCount.innerText = waitingQueue.length;
+
     waitingQueue.forEach((car, index) => {
         const carDiv = document.createElement('div');
         carDiv.className = 'queue-item fade-in';
-        carDiv.innerHTML = `<b>#${index + 1}</b> ${car.fuelType} (${car.money}р)`;
+        // Добавляем кнопку удаления (крестик)
+        carDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span><b>#${index + 1}</b> ${car.fuelType} (${car.money}р)</span>
+                <button onclick="removeFromQueue(${index})" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-weight: bold; margin-left: 10px;">✕</button>
+            </div>
+        `;
         queueList.appendChild(carDiv);
     });
 }
+
+function removeFromQueue(index) {
+    // Удаляем 1 элемент по указанному индексу
+    waitingQueue.splice(index, 1);
+    
+    // Перерисовываем очередь, чтобы индексы #1, #2 обновились
+    renderQueue();
+    
+    statusMessage.innerText = "Машина уехала из очереди";
+    statusMessage.style.color = "#bdc3c7";
+}
+
+
 function animateProgress(pumpId, duration) {
     let start = null;
     function step(timestamp) {
