@@ -44,7 +44,7 @@ function runRefuel(money, fuelType, hasCard, pump, liters) {
     renderPumps(); 
     
     // 3. Запускаем анимацию ТОЛЬКО для той колонки, которая начала заправку сейчас
-    animateProgress(pump.id, 30000); 
+    animateProgress(pump.id, REFUEL_DURATION_MS); 
 
     // 4. Всё остальное: история, выручка, хранилище
     transactionHistory.push({
@@ -63,8 +63,8 @@ function runRefuel(money, fuelType, hasCard, pump, liters) {
         renderPumps();
         statusMessage.innerText = `Колонка №${pump.id} свободна`;
         playFinishSound();
-        checkQueue(); 
-    }, 30000);
+        checkQueue();
+    }, REFUEL_DURATION_MS);
 }
 
 
@@ -174,8 +174,8 @@ function renderQueue() {
         // Добавляем кнопку удаления (крестик)
         carDiv.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span><b>#${index + 1}</b> ${car.fuelType} (${car.money}р)</span>
-                <button onclick="removeFromQueue(${index})" style="background: none; border: none; color: #e74c3c; cursor: pointer; font-weight: bold; margin-left: 10px;">✕</button>
+                <span><b>#${index + 1}</b> ${car.fuelType} (${car.money}р)${car.hasCard ? ' 💳' : ''}</span>
+                <button onclick="removeFromQueue(${index})" aria-label="Удалить из очереди" class="queue-remove-btn">✕</button>
             </div>
         `;
         queueList.appendChild(carDiv);
@@ -219,9 +219,7 @@ function getTotalRevenue() {
     return transactionHistory.reduce((total, t) => total + t.amount, 0);
 }
 
-// --- 4. ОБРАБОТЧИКИ СОБЫТИЙ ---
-
-startBtn.addEventListener('click', () => {
+function handleStartRefuel() {
     const money = Number(moneyInput.value);
     const fuelType = fuelSelect.value;
     const hasCard = cardCheckbox.checked;
@@ -237,7 +235,6 @@ startBtn.addEventListener('click', () => {
         statusMessage.innerText = `Заправка начата: ${fuelType}`;
         runRefuel(money, fuelType, hasCard, response.pump, response.liters);
     } else if (response.message.includes("заняты")) {
-        // ДОБАВЛЯЕМ В ОЧЕРЕДЬ
         waitingQueue.push({ money, fuelType, hasCard });
         renderQueue();
         statusMessage.innerText = "Все колонки заняты. Машина добавлена в очередь.";
@@ -245,6 +242,21 @@ startBtn.addEventListener('click', () => {
         statusMessage.innerText = response.message;
     }
     moneyInput.value = '';
+}
+
+// --- 4. ОБРАБОТЧИКИ СОБЫТИЙ ---
+
+startBtn.addEventListener('click', handleStartRefuel);
+
+document.getElementById('cancelBtn')?.addEventListener('click', () => {
+    moneyInput.value = '';
+    cardCheckbox.checked = false;
+    statusMessage.innerText = 'Система готова к работе';
+    statusMessage.style.color = '';
+});
+
+moneyInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleStartRefuel();
 });
 
 // Отчет за смену
@@ -267,6 +279,9 @@ document.getElementById('clearHistoryBtn').addEventListener('click', () => {
 });
 
 document.querySelector('.close-modal').onclick = () => reportModal.style.display = "none";
+reportModal.addEventListener('click', (e) => {
+    if (e.target === reportModal) reportModal.style.display = "none";
+});
 
 document.getElementById('confirmCloseShift').onclick = () => {
     if (confirm("Сбросить смену и ТОПЛИВО?")) {
@@ -276,18 +291,58 @@ document.getElementById('confirmCloseShift').onclick = () => {
 };
 
 document.getElementById('updatePricesBtn').addEventListener('click', () => {
-    fuelPrices['92'] = Number(document.getElementById('price92').value);
-    fuelPrices['95'] = Number(document.getElementById('price95').value);
-    fuelPrices['98'] = Number(document.getElementById('price98').value);
-    fuelPrices['diesel'] = Number(document.getElementById('priceDiesel').value);
+    const p92 = Number(document.getElementById('price92').value);
+    const p95 = Number(document.getElementById('price95').value);
+    const p98 = Number(document.getElementById('price98').value);
+    const pDiesel = Number(document.getElementById('priceDiesel').value);
+    const prices = [p92, p95, p98, pDiesel];
+    if (prices.some(p => isNaN(p) || p <= 0)) {
+        statusMessage.innerText = "Ошибка: все цены должны быть больше 0";
+        statusMessage.style.color = "#e74c3c";
+        return;
+    }
+    fuelPrices['92'] = p92;
+    fuelPrices['95'] = p95;
+    fuelPrices['98'] = p98;
+    fuelPrices['diesel'] = pDiesel;
     statusMessage.innerText = "Цены обновлены!";
+    statusMessage.style.color = "#aaa";
 });
 
 
 function playFinishSound() {
-    const audio = new Audio('https://assets.mixkit.co');
-    audio.volume = 0.5; // Громкость 50%
-    audio.play().catch(err => console.log("Браузер заблокировал автовоспроизведение звука"));
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+    } catch (e) { /* браузер заблокировал автовоспроизведение */ }
+}
+
+// Восстановление колонок после перезагрузки (если заправка ещё идёт)
+function recoverBusyPumps() {
+    pumps.forEach(pump => {
+        if (pump.status === 'busy' && pump.busySince) {
+            const elapsed = Date.now() - pump.busySince;
+            const remaining = REFUEL_DURATION_MS - elapsed;
+            if (remaining > 0) {
+                setTimeout(() => {
+                    releasePump(pump.id);
+                    renderPumps();
+                    statusMessage.innerText = `Колонка №${pump.id} свободна`;
+                    playFinishSound();
+                    checkQueue();
+                }, remaining);
+            }
+        }
+    });
 }
 
 // СТАРТ
@@ -296,6 +351,7 @@ renderTransactions();
 renderStorage();
 renderQueue();
 totalRevenueDisplay.innerText = getTotalRevenue();
+recoverBusyPumps();
 
 
 

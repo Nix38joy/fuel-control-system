@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
    
-    <link rel="icon" href="https://img.icons8.com" type="image/png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2327ae60'><path d='M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1h16V7c0-1.1-.9-2-2-2zM5 20h14v-6H5v6z'/></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FuelControl v1.0</title>
     <link rel="stylesheet" href="style.css">
@@ -18,8 +18,8 @@
         <div class="control-panel">
             <h3>Новая заправка</h3>
             <div class="input-group">
-                <input type="number" id="moneyInput" placeholder="Сумма (руб)">
-                <select id="fuelSelect">
+                <input type="number" id="moneyInput" placeholder="Сумма (руб)" aria-label="Сумма заправки в рублях" min="1" step="1">
+                <select id="fuelSelect" aria-label="Выбор типа топлива">
                     <option value="92">АИ-92</option>
                     <option value="95">АИ-95</option>
                     <option value="98">АИ-98</option>
@@ -30,13 +30,13 @@
 
             <div class="options-group">
                 <label>
-                    <input type="checkbox" id="cardCheckbox"> Есть карта лояльности
+                    <input type="checkbox" id="cardCheckbox" aria-label="Есть карта лояльности"> Есть карта лояльности
                 </label>
             </div>
 
             <div class="actions">
-                <button id="startBtn" class="btn-main">ЗАПРАВИТЬ</button>
-                <button id="cancelBtn" class="btn-secondary">Очистить поля</button>
+                <button id="startBtn" class="btn-main" aria-label="Начать заправку">ЗАПРАВИТЬ</button>
+                <button id="cancelBtn" class="btn-secondary" aria-label="Очистить поля ввода">Очистить поля</button>
             </div>
         </div>
 
@@ -87,21 +87,21 @@
         <label>95: <input type="number" id="price95" value="55" style="width: 50px;"></label>
         <label>98: <input type="number" id="price98" value="65" style="width: 50px;"></label>
         <label>ДТ: <input type="number" id="priceDiesel" value="60" style="width: 50px;"></label>
-        <button id="updatePricesBtn" class="btn-secondary" style="width: auto; padding: 8px 12px; margin: 0;">ОК</button>
+        <button id="updatePricesBtn" class="btn-secondary" style="width: auto; padding: 8px 12px; margin: 0;" aria-label="Применить новые цены">ОК</button>
     </div>
 </div>
 
             
  
 
-                <button id="clearHistoryBtn" class="btn-warning">Закрыть смену (Сброс кассы)</button>
+                <button id="clearHistoryBtn" class="btn-warning" aria-label="Закрыть смену и сбросить кассу">Закрыть смену (Сброс кассы)</button>
             </div>
         </div>
     </div>
 
     <div id="reportModal" class="modal">
     <div class="modal-content">
-        <span class="close-modal">&times;</span>
+        <span class="close-modal" aria-label="Закрыть окно">&times;</span>
         <div id="receiptArea">
             <h2 class="receipt-header">ИТОГОВЫЙ ЧЕК СМЕНЫ</h2>
             <div id="reportData" class="receipt-body">
@@ -109,7 +109,7 @@
             </div>
             <div class="receipt-footer">
                 <p>СПАСИБО ЗА РАБОТУ!</p>
-                <button id="confirmCloseShift" class="btn-warning">ОБНУЛИТЬ И ЗАКРЫТЬ</button>
+                <button id="confirmCloseShift" class="btn-warning" aria-label="Обнулить кассу и закрыть смену">ОБНУЛИТЬ И ЗАКРЫТЬ</button>
             </div>
         </div>
     </div>

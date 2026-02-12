@@ -22,15 +22,16 @@ function calculateFuelLimit(money, fuelType, hasCard) {
     if (fuelType === "98" && money < min98) {
         return `Для 98-го бензина мин. сумма ${min98} р`;
     } 
-    if (fuelType === "diesel" && money < 1000) {
-        return `Минимальная сумма для дизеля 1500 р`;
+    const minDiesel = 1500;
+    if (fuelType === "diesel" && money < minDiesel) {
+        return `Минимальная сумма для дизеля ${minDiesel} р`;
     }
 
     return "success"; 
 }
 
 function calculateLiters(money, fuelType, hasCard) {
-    let price = fuelPrices [fuelType];
+    let price = fuelPrices[fuelType];
 
     if (hasCard) {
         price = price * 0.98;
