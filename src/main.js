@@ -62,6 +62,7 @@ function runRefuel(money, fuelType, hasCard, pump, liters) {
         releasePump(pump.id);
         renderPumps();
         statusMessage.innerText = `Колонка №${pump.id} свободна`;
+        playFinishSound();
         checkQueue(); 
     }, 30000);
 }
@@ -281,6 +282,13 @@ document.getElementById('updatePricesBtn').addEventListener('click', () => {
     fuelPrices['diesel'] = Number(document.getElementById('priceDiesel').value);
     statusMessage.innerText = "Цены обновлены!";
 });
+
+
+function playFinishSound() {
+    const audio = new Audio('https://assets.mixkit.co');
+    audio.volume = 0.5; // Громкость 50%
+    audio.play().catch(err => console.log("Браузер заблокировал автовоспроизведение звука"));
+}
 
 // СТАРТ
 renderPumps();
