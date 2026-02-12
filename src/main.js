@@ -37,31 +37,35 @@ function runRefuel(money, fuelType, hasCard, pump, liters) {
     fuelStorage[fuelType] = Number((Number(fuelStorage[fuelType]) - liters).toFixed(2));
     localStorage.setItem('fuelInventory', JSON.stringify(fuelStorage));
 
-    // 2. Резерв колонки и визуал
+    // 2. Резерв колонки
     reservePump(pump.id);
-    renderPumps();
-    renderStorage();
-    animateProgress(pump.id, 30000); // 30 секунд
+    
+    // ВАЖНО: Сначала рисуем все колонки (это создаст пустые контейнеры для полосок)
+    renderPumps(); 
+    
+    // 3. Запускаем анимацию ТОЛЬКО для той колонки, которая начала заправку сейчас
+    animateProgress(pump.id, 30000); 
 
-    // 3. Сохранение транзакции в историю
+    // 4. Всё остальное: история, выручка, хранилище
     transactionHistory.push({
         amount: money, fuel: fuelType, pumpId: pump.id, 
         time: new Date().toLocaleTimeString(), withCard: hasCard
     });
     localStorage.setItem('fuelTransactions', JSON.stringify(transactionHistory));
+    
     renderTransactions();
+    renderStorage();
     totalRevenueDisplay.innerText = getTotalRevenue();
 
-    // 4. Таймер освобождения
+    // 5. Таймер освобождения
     setTimeout(() => {
         releasePump(pump.id);
         renderPumps();
         statusMessage.innerText = `Колонка №${pump.id} свободна`;
-        
-        // ПРОВЕРЯЕМ ОЧЕРЕДЬ, когда кто-то уехал!
         checkQueue(); 
     }, 30000);
 }
+
 
 // Автоматический поиск машины в очереди
 function checkQueue() {
@@ -99,22 +103,40 @@ const reportModal = document.getElementById('reportModal');
 const reportData = document.getElementById('reportData');
 
 function renderPumps() {
-    pumpsGrid.innerHTML = '';
     pumps.forEach(pump => {
-        const pumpDiv = document.createElement('div');
+        // Ищем уже существующую карточку колонки на странице
+        let pumpDiv = document.querySelector(`[data-pump-id="${pump.id}"]`);
+        
+        // Если карточки еще нет (первый запуск) — создаем её
+        if (!pumpDiv) {
+            pumpDiv = document.createElement('div');
+            pumpDiv.setAttribute('data-pump-id', pump.id);
+            pumpsGrid.appendChild(pumpDiv);
+        }
+
+        // Обновляем только классы и текст, не трогая внутренности, если там идет анимация
         pumpDiv.className = `pump-card ${pump.status}`;
-        const progressBarHtml = pump.status === 'busy' 
-            ? `<div class="progress-container"><div id="bar-${pump.id}" class="progress-bar"></div></div>` 
-            : '';
-        pumpDiv.innerHTML = `
-            <h3>Колонка №${pump.id}</h3>
-            <p>Топливо: ${pump.fuelType}</p>
-            ${progressBarHtml}
-            <small>${pump.status === 'available' ? 'Свободна' : 'Заправка...'}</small>
-        `;
-        pumpsGrid.appendChild(pumpDiv);
+        
+        // Если колонка освободилась — очищаем её полностью
+        if (pump.status === 'available') {
+            pumpDiv.innerHTML = `
+                <h3>Колонка №${pump.id}</h3>
+                <p>Топливо: ${pump.fuelType}</p>
+                <small>Свободна</small>
+            `;
+        } 
+        // Если занята и там НЕТ полоски — рисуем заголовок и место под полоску
+        else if (pump.status === 'busy' && !pumpDiv.querySelector('.progress-bar')) {
+            pumpDiv.innerHTML = `
+                <h3>Колонка №${pump.id}</h3>
+                <p>Топливо: ${pump.fuelType}</p>
+                <div class="progress-container"><div id="bar-${pump.id}" class="progress-bar"></div></div>
+                <small>Заправка...</small>
+            `;
+        }
     });
 }
+
 
 function renderTransactions() {
     if (!transactionsList) return;
@@ -151,21 +173,26 @@ function renderQueue() {
         queueList.appendChild(carDiv);
     });
 }
-
 function animateProgress(pumpId, duration) {
-    setTimeout(() => {
+    let start = null;
+    function step(timestamp) {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        const percentage = Math.min((elapsed / duration) * 100, 100);
+        
         const bar = document.getElementById(`bar-${pumpId}`);
-        if (!bar) return;
-        let start = null;
-        function step(timestamp) {
-            if (!start) start = timestamp;
-            const elapsed = timestamp - start;
-            bar.style.width = Math.min((elapsed / duration) * 100, 100) + '%';
-            if (elapsed < duration) window.requestAnimationFrame(step);
+        // Если бар существует на странице — двигаем его
+        if (bar) {
+            bar.style.width = percentage + '%';
         }
-        window.requestAnimationFrame(step);
-    }, 50);
+
+        if (elapsed < duration) {
+            window.requestAnimationFrame(step);
+        }
+    }
+    window.requestAnimationFrame(step);
 }
+
 
 function getTotalRevenue() {
     return transactionHistory.reduce((total, t) => total + t.amount, 0);
