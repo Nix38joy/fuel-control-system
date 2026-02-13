@@ -325,4 +325,16 @@ button:disabled {
         font-size: 14px;
         flex-wrap: wrap;
     }
+
+    button {
+    white-space: normal; /* Разрешаем перенос текста на новую строку */
+    line-height: 1.2;    /* Чтобы строки не слипались */
+    padding: 5px;        /* Немного уменьшим внутренние отступы */
+    font-size: 16px !important; /* Чуть-чуть уменьшим шрифт для кнопок */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 }
