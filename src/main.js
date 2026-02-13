@@ -166,6 +166,9 @@ function renderStorage() {
         let statusClass = (amount <= 0) ? 'out-of-stock' : (amount < 100 ? 'critical-low' : '');
         item.innerHTML = `${fuel.toUpperCase()}: <span class="${statusClass}">${amount.toFixed(2)} л</span>`;
         storageStatus.appendChild(item);
+        checkStartButton();
+        updateFuelSelectOptions();
+    
     }
 }
 
@@ -249,6 +252,36 @@ function handleStartRefuel() {
     }
     moneyInput.value = '';
 }
+
+// Функция 1: Обновляет названия в выпадающем списке (добавляет "НЕТ В НАЛИЧИИ")
+function updateFuelSelectOptions() {
+    const options = fuelSelect.options;
+    for (let i = 0; i < options.length; i++) {
+        const fuel = options[i].value;
+        const amount = Number(fuelStorage[fuel]);
+        
+        if (amount <= 0) {
+            options[i].text = `${fuel.toUpperCase()} (НЕТ В НАЛИЧИИ)`;
+        } else {
+            options[i].text = fuel.toUpperCase();
+        }
+    }
+}
+
+// Функция 2: Проверяет выбранное топливо и выключает кнопку, если его 0
+function checkStartButton() {
+    const selectedFuel = fuelSelect.value;
+    const amount = Number(fuelStorage[selectedFuel]);
+    
+    if (amount <= 0) {
+        startBtn.disabled = true; // Блокируем технически
+        startBtn.innerText = "НЕТ ТОПЛИВА";
+    } else {
+        startBtn.disabled = false; // Разблокируем
+        startBtn.innerText = "ЗАПРАВИТЬ";
+    }
+}
+
 
 // --- 4. ОБРАБОТЧИКИ СОБЫТИЙ ---
 
@@ -368,7 +401,7 @@ renderStorage();
 renderQueue();
 totalRevenueDisplay.innerText = getTotalRevenue();
 recoverBusyPumps();
+// Слушаем изменение выбора в списке
 
-
-
+fuelSelect.addEventListener('change', checkStartButton);
 

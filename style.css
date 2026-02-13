@@ -285,3 +285,12 @@ button {
 .queue-remove-btn:hover {
     opacity: 0.8;
 }
+
+/* Стиль для выключенной кнопки */
+button:disabled {
+    background-color: #555 !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    border-color: #444 !important;
+}
