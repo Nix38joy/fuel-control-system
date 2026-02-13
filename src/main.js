@@ -47,9 +47,15 @@ function runRefuel(money, fuelType, hasCard, pump, liters) {
     animateProgress(pump.id, REFUEL_DURATION_MS); 
 
     // 4. Всё остальное: история, выручка, хранилище
+     const currentPrice = fuelPrices[fuelType]; // Берем цену, которая стоит СЕЙЧАС
+
     transactionHistory.push({
-        amount: money, fuel: fuelType, pumpId: pump.id, 
-        time: new Date().toLocaleTimeString(), withCard: hasCard
+        amount: money, 
+        fuel: fuelType, 
+        pumpId: pump.id, 
+        priceAtMoment: currentPrice, // <-- ЗАМОРАЖИВАЕМ ЦЕНУ
+        time: new Date().toLocaleTimeString(), 
+        withCard: hasCard
     });
     localStorage.setItem('fuelTransactions', JSON.stringify(transactionHistory));
     
@@ -262,16 +268,26 @@ moneyInput.addEventListener('keydown', (e) => {
 // Отчет за смену
 function generateShiftReportHTML() {
     const report = { '92': { l: 0, r: 0 }, '95': { l: 0, r: 0 }, '98': { l: 0, r: 0 }, 'diesel': { l: 0, r: 0 } };
+    
     transactionHistory.forEach(t => {
-        const l = calculateLiters(t.amount, t.fuel, t.withCard);
-        report[t.fuel].l += Number(l);
+        // Раньше мы считали литры через calculateLiters (которая берет ТЕКУЩУЮ цену)
+        // Теперь считаем честно по той цене, что была в момент продажи
+        const liters = t.amount / t.priceAtMoment; 
+        
+        report[t.fuel].l += Number(liters);
         report[t.fuel].r += t.amount;
     });
+
     let html = "";
-    for (let f in report) { if (report[f].r > 0) html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л<br>Сумма: ${report[f].r} р</p>`; }
+    for (let f in report) { 
+        if (report[f].r > 0) {
+            html += `<p><b>${f.toUpperCase()}</b>: ${report[f].l.toFixed(2)} л<br>Сумма: ${report[f].r} р</p>`; 
+        }
+    }
     html += `<hr><h3>ИТОГО: ${getTotalRevenue()} р</h3>`;
     return html;
 }
+
 
 document.getElementById('clearHistoryBtn').addEventListener('click', () => {
     reportData.innerHTML = generateShiftReportHTML();
